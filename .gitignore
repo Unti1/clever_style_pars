@@ -5,3 +5,8 @@ logs.log
 data
 lib
 lib64
+dist
+build
+Scripts
+__pycache__
+*.spec
