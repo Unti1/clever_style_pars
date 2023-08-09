@@ -25,3 +25,5 @@ urllib3==2.0.2
 webdriver-manager==4.0.0
 wsproto==1.2.0
 zstandard==0.21.0
+ipaddress
+pyimod02_importers
