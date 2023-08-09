@@ -10,8 +10,6 @@ Nuitka==1.5.8
 ordered-set==4.1.0
 outcome==1.2.0
 packaging==23.1
-pyinstaller==5.11.0
-pyinstaller-hooks-contrib==2023.3
 PySocks==1.7.1
 python-dotenv==1.0.0
 requests==2.31.0
@@ -26,4 +24,3 @@ webdriver-manager==4.0.0
 wsproto==1.2.0
 zstandard==0.21.0
 ipaddress
-pyimod02_importers
