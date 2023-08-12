@@ -13,6 +13,7 @@ class Pars():
             Для Linux сделать предвартилеьно chmo+x ..utils/cromedriver-linux
         """
         self._invis = invisable
+        self.file_bizy = False
         self.running_times = 0
         self.driver = self.based_browser_startUp(invisable) # обычный запуск без dolphin
         #self.dolphin_browser_startUp(False) # запуск c dolphin
@@ -37,10 +38,6 @@ class Pars():
         driver.find_element(By.XPATH, '//form[@class="auth__form form js-auth-form"]//button[@type="submit"]').click()
         time.sleep(2)
 
-    def wait_for_copy(source_path, destination_path):
-        # Ожидаем, пока файл будет скопирован
-        while not os.path.exists(destination_path):
-            time.sleep(0.1)
     def based_browser_startUp(self, invisable):
         self.running_times += 1
         options = webdriver.ChromeOptions()
@@ -81,7 +78,8 @@ class Pars():
         os.mkdir(folder_path)
 
     def write_to_csv(self, filename, data):
-        import csv 
+        import csv
+        self.file_bizy = True
         print(f"\n>Сохраняю \"{filename}.csv\" в папку \"data\"")
         # Открываем файл в режиме дозаписи ('a') или создаем новый файл ('w')
         with open(f"data/{filename}.csv", 'w', newline='', encoding='cp1251') as csvfile:
@@ -94,6 +92,7 @@ class Pars():
             for row in data:
                 writer.writerow(row)  
         print(f">Данные сохранены")
+        self.file_bizy = False
         
     def file_exists(self, filename):
         try:
@@ -238,11 +237,12 @@ class Pars():
         return
     
     def sigment_catalog(self):
-        for title,value in self.main_data.items():
-            # print(title,value)
-            self.write_to_csv(title,value)
-        pass
-
+        while self.file_bizy:
+            time.sleep(0.2)
+        else:
+            for title,value in self.main_data.items():
+                self.write_to_csv(title,value)
+                
     def single_tovar_grab(self,driver: webdriver.Chrome, link: str):
         driver.get(link)
         try:
