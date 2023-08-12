@@ -54,10 +54,14 @@ class Pars():
             print("Путь основного ядра: ", exc_path)
         else:
             print("Основное ядро занято, создаю новое")
+            
             exc_path = ChromeDriverManager().install()
-            copy_name = exc_path + f'_{self.running_times}'
+            exc_path = exc_path.rsplit("/",maxsplit=1)
+            exc_path[-1] = exc_path[-1].replace('.',f'_{self.running_times}.')
+            copy_name = "/".join(exc_path)
+
             if not os.path.exists(copy_name):
-                shutil.copy2(exc_path, copy_name)
+                shutil.copy2(exc_path, copy_name)            
                 while not os.path.exists(copy_name):
                     time.sleep(0.1)
                 exc_path = copy_name
