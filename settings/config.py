@@ -13,6 +13,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 ############################################
 """Прочие необходимые библиотеки"""
+import shutil
 import requests
 import traceback
 import configparser

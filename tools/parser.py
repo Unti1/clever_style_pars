@@ -13,6 +13,7 @@ class Pars():
             Для Linux сделать предвартилеьно chmo+x ..utils/cromedriver-linux
         """
         self._invis = invisable
+        self.running_times = 0
         self.driver = self.based_browser_startUp(invisable) # обычный запуск без dolphin
         #self.dolphin_browser_startUp(False) # запуск c dolphin
         self.wait = WebDriverWait(self.driver,6)
@@ -36,7 +37,12 @@ class Pars():
         driver.find_element(By.XPATH, '//form[@class="auth__form form js-auth-form"]//button[@type="submit"]').click()
         time.sleep(2)
 
+    def wait_for_copy(source_path, destination_path):
+        # Ожидаем, пока файл будет скопирован
+        while not os.path.exists(destination_path):
+            time.sleep(0.1)
     def based_browser_startUp(self, invisable):
+        self.running_times += 1
         options = webdriver.ChromeOptions()
         if invisable:
             options.add_argument('--headless')
@@ -44,7 +50,25 @@ class Pars():
         options.add_argument("--disable-notifications")
         # Отключаем логирование
         options.add_experimental_option('excludeSwitches', ['enable-logging'])
-        driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+        
+        # Обработчик для нескольких драйверов
+        if self.running_times == 1:
+            exc_path = ChromeDriverManager().install()
+            print("Путь основного ядра: ", exc_path)
+        else:
+            print("Основное ядро занято, создаю новое")
+            exc_path = ChromeDriverManager().install()
+            copy_name = exc_path + f'_{self.running_times}'
+            if not os.path.exists(copy_name):
+                shutil.copy2(exc_path, copy_name)
+                while not os.path.exists(copy_name):
+                    time.sleep(0.1)
+                exc_path = copy_name
+                print(f"Новое ядро расположено по пути: {copy_name}")
+            else:
+                exc_path = copy_name
+
+        driver = webdriver.Chrome(executable_path=exc_path, options=options)
         driver.set_window_size(1920, 1080)
         return driver
     
