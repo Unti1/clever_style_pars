@@ -59,6 +59,7 @@ class Pars():
             exc_path = exc_path.rsplit("/",maxsplit=1)
             exc_path[-1] = exc_path[-1].replace('.',f'_{self.running_times}.')
             copy_name = "/".join(exc_path)
+            exc_path = ChromeDriverManager().install()
 
             if not os.path.exists(copy_name):
                 shutil.copy2(exc_path, copy_name)            
