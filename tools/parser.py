@@ -21,11 +21,12 @@ class Pars():
         self.main_data = {}
     
     def process_monitor(self):
-        while True in list(map(lambda x: self.thread_dict[x].is_alive(),self.thread_dict)):    
-            if platform.platform() == "Window":
+        while True in list(map(lambda x: self.thread_dict[x][0].is_alive(),self.thread_dict)):    
+            if platform.system() != "Linux":
                 clear_command = "CLS"
             else:
                 clear_command = "clear"
+
             os.system(clear_command)
             print("===="*20)
             for proc in self.thread_dict:
@@ -67,23 +68,24 @@ class Pars():
             print("Путь основного ядра: ", exc_path)
         else:
             print("Основное ядро занято, создаю новое для отдельного потока")
-            
-            exc_path = ChromeDriverManager().install()
-            exc_path = exc_path.replace("/","\\")
-            exc_path = exc_path.rsplit("\\",maxsplit=1)
-            exc_path[-1] = exc_path[-1].replace('.',f'_{self.running_times}.')
-            copy_name = "\\".join(exc_path)
-            exc_path = ChromeDriverManager().install()
+            if platform.system() != "Linux":
+                exc_path = ChromeDriverManager().install()
+                exc_path = exc_path.replace("/","\\")
+                exc_path = exc_path.rsplit("\\",maxsplit=1)
+                exc_path[-1] = exc_path[-1].replace('.',f'_{self.running_times}.')
+                copy_name = "\\".join(exc_path)
+                exc_path = ChromeDriverManager().install()
 
-            if not os.path.exists(copy_name):
-                shutil.copy2(exc_path, copy_name)            
-                while not os.path.exists(copy_name):
-                    time.sleep(0.1)
-                exc_path = copy_name
-                print(f"Новое ядро расположено по пути: {copy_name}")
+                if not os.path.exists(copy_name):
+                    shutil.copy2(exc_path, copy_name)            
+                    while not os.path.exists(copy_name):
+                        time.sleep(0.1)
+                    exc_path = copy_name
+                    print(f"Новое ядро расположено по пути: {copy_name}")
+                else:
+                    exc_path = copy_name
             else:
-                exc_path = copy_name
-
+                exc_path = ChromeDriverManager().install()
         driver = webdriver.Chrome(executable_path=exc_path, options=options)
         driver.set_window_size(1920, 1080)
         return driver
@@ -212,8 +214,7 @@ class Pars():
                 # собирает конкретные значения из товаров
                 
                 for step,link in enumerate(links):
-                    # sys.stdout.write(f"\r{driver.name}>Просмотренно товаров [{step+1}/{len(links)}] |  {link}")
-                    # sys.stdout.flush()
+                    self.thread_dict[key_stat][1] = f">Просмотренно: [{step+1}/{len(links)}] | {title}"
                     tovar = list(self.single_tovar_grab(driver, link))
                     
                     # Разбиение по сраным цветам с зависимостью в виде размера
@@ -235,25 +236,25 @@ class Pars():
                         if type(tovar[4]) == list:
                             sizes = ";".join(tovar[4])
                             tovar[4] = sizes
-                        # if type(tovar[5]) == list:
-                        #     counts = ";".join(tovar[5])
-                        #     tovar[5] = counts
                         if type(tovar[-1]) == list:
                             img = ";".join(tovar[-1])
                             tovar[-1] = img
                         tovar_data.append(tovar)
-                # Очистка дублей
+
+                # Очистка дублей и сохранение информации
                 if tovar_data != []:
                     if self.main_data.get(title) != None:
                         self.main_data[title] = self.remove_duplicates(sum([self.main_data[title],tovar_data],[]))
+                        tovar_data = []
                         self.sigment_catalog(key_stat = key_stat)
 
                     else:
                         self.main_data[title] = self.remove_duplicates(tovar_data)
+                        tovar_data = []
                         self.sigment_catalog(key_stat = key_stat)                       
                 else:
                     self.thread_dict[key_stat][1] = "Каталог пуст"
-                tovar_data = []
+                    tovar_data = []
             except:
                 tovar_data = []
                 logging.error(f"Ошибка сбора данных в каталоге {s[0]} \n{traceback.format_exc()}\n -- Набор данных --> {tovar_data}")
@@ -454,7 +455,7 @@ class Pars():
     
     def multythread_parse(self,subcatalogs,test = False):
         from threading import Thread    
-        thread_count: int = os.cpu_count()
+        thread_count: int = os.cpu_count() - 2
         self.thread_dict: dict = {}
         working_lists = self.split_list(subcatalogs, thread_count)
 
