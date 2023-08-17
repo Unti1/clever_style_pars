@@ -18,9 +18,22 @@ class Pars():
         self.driver = self.based_browser_startUp(invisable) # обычный запуск без dolphin
         #self.dolphin_browser_startUp(False) # запуск c dolphin
         self.wait = WebDriverWait(self.driver,6)
-        self.action = ActionChains(self.driver,250)
         self.main_data = {}
     
+    def process_monitor(self):
+        while True in list(map(lambda x: self.thread_dict[x].is_alive(),self.thread_dict)):    
+            if platform.platform() == "Window":
+                clear_command = "CLS"
+            else:
+                clear_command = "clear"
+            os.system(clear_command)
+            print("===="*20)
+            for proc in self.thread_dict:
+                print(f"ID: {self.thread_dict[proc][0].name}| Работает?: {self.thread_dict[proc][0].is_alive()} | Статус: {self.thread_dict[proc][1]}")
+            print("===="*20)
+        else:
+            return 0
+
     def authorithation(self,driver):
         driver.get("https://clever-style.ru/catalog/")
         # //div[@data-modal="auth"]/span - вход кнопка
@@ -83,10 +96,10 @@ class Pars():
         # Создать пустую папку "data"
         os.mkdir(folder_path)
 
-    def write_to_csv(self, filename, data):
+    def write_to_csv(self, filename, data, key_stat = ""):
         import csv
         self.file_bizy = True
-        print(f"\n>Сохраняю \"{filename}.csv\" в папку \"data\"")
+        self.thread_dict[key_stat][1] = f"> Сохраняю \"{filename}.csv\" в папку \"data\""
         # Открываем файл в режиме дозаписи ('a') или создаем новый файл ('w')
         with open(f"data/{filename}.csv", 'w', newline='', encoding='cp1251') as csvfile:
             writer = csv.writer(csvfile, delimiter=';', quoting=csv.QUOTE_MINIMAL)
@@ -97,7 +110,7 @@ class Pars():
             # Записываем каждую строку данных в файл CSV
             for row in data:
                 writer.writerow(row)  
-        print(f">Данные сохранены")
+        self.thread_dict[key_stat][1] = f"> Данные сохранены"
         self.file_bizy = False
         
     def file_exists(self, filename):
@@ -108,13 +121,14 @@ class Pars():
             return False
 
     def catalog(self):
+        action = ActionChains(self.driver,250)
         self.driver.get("https://clever-style.ru/catalog/")
         self.wait.until(EC.element_to_be_clickable((By.XPATH,'//a[@href="/catalog/zhenskoe/"]'))) # ожидание
         try:
             for el in self.driver.find_elements(By.XPATH,"//nav/section/button"):
-                self.action.move_to_element(el)
-                self.action.click(el)
-                self.action.perform()  
+                action.move_to_element(el)
+                action.click(el)
+                action.perform()  
         except:
             pass
         time.sleep(2)
@@ -172,7 +186,7 @@ class Pars():
         unique_list = list(set(map(tuple, lst)))
         return [list(sublist) for sublist in unique_list]
 
-    def parse_subcatalogs(self,driver,subcatalogs,test=False):
+    def parse_subcatalogs(self,driver: webdriver.Chrome, subcatalogs:list[tuple], test=False, key_stat = ""):
         """Основной модуль парсинга
 
         Args:
@@ -187,18 +201,18 @@ class Pars():
             tovar_data = []
             try:
                 title = s[0]
-                print(f"Начинаю сбор для \"{title}\"")
+                self.thread_dict[key_stat][1] = f"Начинаю сбор для \"{title}\""
                 if test == False:
                     links = self.parse_subcatalog_page_links(driver, s[-1]) # собирает ссылки на товари из подкаталога
                 else:
                     links = self.parse_subcatalog_page_links(driver, s[-1])
                     if len(links) > 0:
                         links = links[:10]
-                print(f"> Получены {len(links)} ссылок на товар. Собираю информацию...")
+                self.thread_dict[key_stat][1] = f"> Получены {len(links)} ссылок на товар. Собираю информацию..."
                 # собирает конкретные значения из товаров
                 
                 for step,link in enumerate(links):
-                    # sys.stdout.write(f"\r>Просмотренно товаров [{step+1}/{len(links)}] |  {link}")
+                    # sys.stdout.write(f"\r{driver.name}>Просмотренно товаров [{step+1}/{len(links)}] |  {link}")
                     # sys.stdout.flush()
                     tovar = list(self.single_tovar_grab(driver, link))
                     
@@ -232,33 +246,38 @@ class Pars():
                 if tovar_data != []:
                     if self.main_data.get(title) != None:
                         self.main_data[title] = self.remove_duplicates(sum([self.main_data[title],tovar_data],[]))
-                        self.sigment_catalog()
+                        self.sigment_catalog(key_stat = key_stat)
+
                     else:
                         self.main_data[title] = self.remove_duplicates(tovar_data)
-                        self.sigment_catalog()
+                        self.sigment_catalog(key_stat = key_stat)                       
                 else:
-                    print("Каталог пуст")
+                    self.thread_dict[key_stat][1] = "Каталог пуст"
+                tovar_data = []
             except:
+                tovar_data = []
                 logging.error(f"Ошибка сбора данных в каталоге {s[0]} \n{traceback.format_exc()}\n -- Набор данных --> {tovar_data}")
         return
     
-    def sigment_catalog(self):
+    def sigment_catalog(self, key_stat = ""):
         while self.file_bizy:
             time.sleep(0.2)
         else:
             for title,value in self.main_data.items():
-                self.write_to_csv(title,value)
+                self.write_to_csv(title,value,key_stat = key_stat)
                 
     def single_tovar_grab(self,driver: webdriver.Chrome, link: str):
         driver.get(link)
+        action = ActionChains(driver,250)
         try:
             more = driver.find_element(By.XPATH,'//section[1]/div/div[2]/section[3]/button')
-            self.action.move_to_element(more)
-            self.action.click(more)
-            self.action.perform()
+            action.move_to_element(more)
+            action.click(more)
+            action.perform()
             time.sleep(0.25)
         except: 
             pass
+        
         WebDriverWait(driver,5).until(EC.element_to_be_clickable((By.XPATH,'//h1[@class="product__title main-title"]')))
         title = driver.find_element(By.XPATH,'//h1[@class="product__title main-title"]').text.replace("\n","")
 
@@ -276,9 +295,9 @@ class Pars():
         img = []
         try:
             for index,color_button in enumerate(driver.find_elements(By.XPATH,'//section[1]/div[2]/div//button')):
-                self.action.move_to_element(color_button)
-                self.action.click(color_button)
-                self.action.perform()
+                action.move_to_element(color_button)
+                action.click(color_button)
+                action.perform()
                 sizes.append(
                     ";".join(
                             list(map(lambda x: x.text, driver.find_elements(By.XPATH,'//div[@class="product-sizes__size js-size-wrap positioned-right"]/button')))
@@ -436,30 +455,31 @@ class Pars():
     def multythread_parse(self,subcatalogs,test = False):
         from threading import Thread    
         thread_count: int = os.cpu_count()
-        thread_list: list[Thread] = []
+        self.thread_dict: dict = {}
         working_lists = self.split_list(subcatalogs, thread_count)
 
         for sub_catalogs in working_lists:
+            thread_name = f"Thread-{len(self.thread_dict)}"
             if sub_catalogs == working_lists[0]:
                 if test == False:
-                    t = Thread(target=self.parse_subcatalogs,args=(self.driver, sub_catalogs,))
+                    t = Thread(target=self.parse_subcatalogs,args=(self.driver, sub_catalogs,False,thread_name,))
                 else:
-                    t = Thread(target=self.parse_subcatalogs,args=(self.driver,sub_catalogs,test))
+                    t = Thread(target=self.parse_subcatalogs,args=(self.driver,sub_catalogs,test,thread_name,))
             else:
                 if test == False:
                     driver = self.based_browser_startUp(self._invis)
-                    t = Thread(target=self.parse_subcatalogs,args=(driver, sub_catalogs,))
+                    t = Thread(target=self.parse_subcatalogs,args=(driver, sub_catalogs,False,thread_name,))
                 else:
                     driver = self.based_browser_startUp(self._invis)
-                    t = Thread(target=self.parse_subcatalogs,args=(driver,sub_catalogs,test))
+                    t = Thread(target=self.parse_subcatalogs,args=(driver,sub_catalogs,test,thread_name,))
 
-                
-            thread_list.append(t)
-        
-        for t in thread_list:
-            t.start()
-        
-        for t in thread_list:
-            t.join()
+            self.thread_dict[thread_name] = [t,'Не определен']
+        monithor = Thread(target=self.process_monitor)
+        for key in self.thread_dict:
+            self.thread_dict[key][0].start()
+        monithor.start()
 
+        for key in self.thread_dict:
+            self.thread_dict[key][0].join()
+        
     
