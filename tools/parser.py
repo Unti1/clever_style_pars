@@ -455,7 +455,7 @@ class Pars():
     
     def multythread_parse(self,subcatalogs,test = False):
         from threading import Thread    
-        thread_count: int = os.cpu_count() - 2
+        thread_count: int = os.cpu_count() - 1
         self.thread_dict: dict = {}
         working_lists = self.split_list(subcatalogs, thread_count)
 
