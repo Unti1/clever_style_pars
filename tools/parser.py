@@ -184,7 +184,7 @@ class Pars():
             page_num = 1
 
         for i in range(page_num):
-            links_list.extend(list(map(lambda x: x.get_attribute('href'),driver.find_elements(By.XPATH,'//a[@class="card-product js-card-product"]'))))
+            links_list.extend(list(map(lambda x: x.get_attribute('href'),driver.find_elements(By.XPATH,'//section[@class="catalog-section"]//a[@class="card-product js-card-product"]'))))
             if page_num != 1 and i != page_num-1:
                 driver.find_elements(By.XPATH,'//a[@class="paginations__item"]')[-1].click()
         return(links_list)
@@ -464,7 +464,7 @@ class Pars():
     
     def multythread_parse(self,subcatalogs,test = False):
         from threading import Thread    
-        thread_count: int = os.cpu_count() - 2
+        thread_count: int = os.cpu_count() - 1
         self.thread_dict: dict = {}
         working_lists = self.split_list(subcatalogs, thread_count)
 
