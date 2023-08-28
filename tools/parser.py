@@ -151,7 +151,7 @@ class Pars():
         sale_link = catalog_data[1][:catalog_data[1].find('catalog/') + len('catalog/')] + "sale/" + catalog_data[1][catalog_data[1].find('catalog/') + len("catalog/"):]
         self.driver.get(sale_link)
         if 'раздел в процессе наполнения' in self.driver.page_source.lower():
-            return None
+            sale_link = None
         regenerate_data = [catalog_data[0],sale_link]
         return(regenerate_data)
 
@@ -375,7 +375,8 @@ class Pars():
             sale_cost = "Отсутствует"
 
         try:
-            description = driver.find_element(By.XPATH,'//section[@class="product-descr hidden-mobile"]/p').text
+            about = driver.find_element(By.XPATH,'//section[@class="product-about"]').text
+            description = about + "\n" + driver.find_element(By.XPATH,'//section[@class="product-descr hidden-mobile"]/p').text
         except exceptions.NoSuchElementException:
             description = "Отсутствует"
         
@@ -391,6 +392,7 @@ class Pars():
 
         catalog_data = self.catalog()
         sale_cat = list(map(lambda x: self.sale_catalog(x),catalog_data))
+        sale_cat = list(filter(lambda x: x[1] != None, sale_cat))
         catalog_data.extend(sale_cat)
         catalog_data.reverse()
         logging.info(f"Список каталогов - {catalog_data}")
@@ -464,7 +466,10 @@ class Pars():
     
     def multythread_parse(self,subcatalogs,test = False):
         from threading import Thread    
-        thread_count: int = os.cpu_count() - 1
+        if platform.system() == "Linux":
+            thread_count: int = os.cpu_count() - 2
+        else:
+            thread_count: int = os.cpu_count() - 1
         self.thread_dict: dict = {}
         working_lists = self.split_list(subcatalogs, thread_count)
 
