@@ -438,6 +438,7 @@ class Pars():
         print("Собираю каталоги...",end=" ")
         catalog_data = self.catalog()
         sale_cat = list(map(lambda x: self.sale_catalog(x),catalog_data))
+        sale_cat = list(filter(lambda x: x[1] != None, sale_cat))
         catalog_data.extend(sale_cat)
         catalog_data.reverse()
         print("[Успешно]")
